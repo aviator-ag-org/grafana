@@ -394,6 +394,28 @@ for i in $(seq 1 120); do
   sleep 1
 done
 
+# Prove the injected credentials actually log in, before declaring the preview
+# ready. Nothing here creates that user: grafana does it itself on first start,
+# from GF_SECURITY_ADMIN_USER/PASSWORD (ensureMainOrgAndAdminUser in
+# pkg/services/sqlstore/sqlstore.go). That function returns early the moment the
+# user table is non-empty, so it seeds ONCE — a database surviving into a later
+# run keeps the old password and silently ignores the new secret.
+#
+# data/ is gitignored, so grafana.db outlives `git clean -fd`. In the normal
+# flow that is harmless (a cold boot gets a fresh sandbox, and the image never
+# ran grafana so it bakes no database), but the failure it would cause is the
+# worst kind: a preview that boots perfectly and rejects the only password the
+# verify agent has. One request rules it out.
+if ! curl -sf -o /dev/null -u "${GF_SECURITY_ADMIN_USER}:${GF_SECURITY_ADMIN_PASSWORD}" \
+    "http://127.0.0.1:${PORT}/api/user"; then
+  t "ERROR: grafana is serving, but the injected admin credentials were rejected."
+  t "       grafana seeds the admin user only when its user table is empty, so an"
+  t "       existing ${GF_PATHS_DATA}/grafana.db still holds the OLD password."
+  t "       Delete it to reseed, or run: bin/grafana cli admin reset-admin-password"
+  exit 1
+fi
+t "Admin credentials verified"
+
 # Point the org home dashboard at the seeded one, so the agent lands on
 # something with panels instead of the empty getting-started screen.
 #
