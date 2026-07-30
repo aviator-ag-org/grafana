@@ -325,8 +325,11 @@ if [ -z "$ADMIN_USER" ] || [ -z "$ADMIN_PASS" ]; then
   exit 1
 fi
 
-# Do not set the password to the literal "admin": grafana then forces a
-# password-change screen that every verify scenario has to click through.
+# Do not set the password to the literal "admin". LoginCtrl.tsx checks
+# `formModel.password !== 'admin'` and, on an exact match, swaps the login form
+# for a change-password step — skippable, but an extra interaction in every
+# scenario. Any other value goes straight through, and no complexity rules
+# apply: [auth.basic] password_policy defaults to false in conf/defaults.ini.
 export GF_SECURITY_ADMIN_USER="$ADMIN_USER"
 export GF_SECURITY_ADMIN_PASSWORD="$ADMIN_PASS"
 
