@@ -3,6 +3,7 @@ package navtree
 import (
 	"encoding/json"
 	"sort"
+	"strings"
 )
 
 const (
@@ -168,16 +169,8 @@ func (root *NavTreeRoot) MarshalJSON() ([]byte, error) {
 
 func Sort(nodes []*NavLink) {
 	sort.SliceStable(nodes, func(i, j int) bool {
-		iw := nodes[i].SortWeight
-		if iw == 0 {
-			iw = int64(i) + 1
-		}
-		jw := nodes[j].SortWeight
-		if jw == 0 {
-			jw = int64(j) + 1
-		}
-
-		return iw < jw
+		// Sort alphabetically by Text field (case-insensitive)
+		return strings.ToLower(nodes[i].Text) < strings.ToLower(nodes[j].Text)
 	})
 
 	for _, child := range nodes {
