@@ -295,31 +295,40 @@ export GF_DEFAULT_APP_MODE=development
 # upstream cannot leave the server reading a manifest that was never built.
 export GF_FEATURE_TOGGLES_ENABLE=react19
 
+# --- Credentials -------------------------------------------------------------
+#
 # Admin credentials come from Aviator account secrets, declared in the preview
-# config's `secrets:` list and injected into this script's environment. Nothing
-# here holds a credential, and the verify skill refers to the same two keys as
-# {{ secrets.GRAFANA_USERNAME }} / {{ secrets.GRAFANA_PASSWORD }}, so the agent
-# and the server always agree on what the password is.
+# config's `secrets:` list and injected into this script's environment under the
+# secret key's exact name. Nothing in this repo holds a credential, and the
+# verify skill refers to the same two keys as {{ secrets.* }}, so the agent and
+# the server cannot disagree about the password.
 #
-# Checked explicitly because AccountSecret.get_decrypted_values resolves keys
-# with an IN query and simply omits any that do not exist — a missing or
-# misspelled key is silently absent rather than an error. Without this the
-# preview would boot healthy and be impossible to log into, which is a much
-# worse failure than stopping here with the reason.
-#
-# Do not use the literal password "admin": grafana then forces a
-# password-change screen that every verify scenario has to click through.
-missing_secrets=()
-[ -n "${GRAFANA_USERNAME:-}" ] || missing_secrets+=("GRAFANA_USERNAME")
-[ -n "${GRAFANA_PASSWORD:-}" ] || missing_secrets+=("GRAFANA_PASSWORD")
-if [ ${#missing_secrets[@]} -gt 0 ]; then
-  t "ERROR: missing account secret(s): ${missing_secrets[*]}"
-  t "       Add them under Settings -> Secrets, and list them in the preview"
-  t "       config's secrets: block. Without them there is no way to log in."
+# The lowercase spelling is accepted as a fallback: the config's `secrets:` list
+# matches keys case-sensitively, but the {{ secrets.* }} placeholders in the
+# skill are resolved case-insensitively — so a secret created in the other case
+# still reaches the skill while this script would otherwise see nothing.
+ADMIN_USER="${GRAFANA_ADMIN_USERNAME:-${grafana_admin_username:-}}"
+ADMIN_PASS="${GRAFANA_ADMIN_PASSWORD:-${grafana_admin_password:-}}"
+
+if [ -z "$ADMIN_USER" ] || [ -z "$ADMIN_PASS" ]; then
+  # Fail rather than fall back to grafana's default admin/admin. The verify
+  # agent signs in with the secret values; if they are not here it would type
+  # credentials that do not exist and report a working app as a broken login.
+  #
+  # This has to be checked here because AccountSecret.get_decrypted_values
+  # resolves keys with an IN query and omits any that do not exist, so a missing
+  # or misspelled key arrives as an unset variable rather than an error.
+  t "ERROR: admin credentials were not injected."
+  t "       Add account secrets 'GRAFANA_ADMIN_USERNAME' and 'GRAFANA_ADMIN_PASSWORD'"
+  t "       (Verify -> Settings -> Secrets), then list both under 'secrets:' in"
+  t "       the preview config, spelled the same way. Neither is optional."
   exit 1
 fi
-export GF_SECURITY_ADMIN_USER="$GRAFANA_USERNAME"
-export GF_SECURITY_ADMIN_PASSWORD="$GRAFANA_PASSWORD"
+
+# Do not set the password to the literal "admin": grafana then forces a
+# password-change screen that every verify scenario has to click through.
+export GF_SECURITY_ADMIN_USER="$ADMIN_USER"
+export GF_SECURITY_ADMIN_PASSWORD="$ADMIN_PASS"
 
 # Everything that phones home. The sandbox has no useful egress, and the news
 # feed panel on the home dashboard blocks on grafana.com's RSS.

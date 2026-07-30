@@ -17,8 +17,8 @@ no other service running.
 Grafana requires a login for almost everything.
 
 - URL: `/login`
-- Username: `{{ secrets.GRAFANA_USERNAME }}`
-- Password: `{{ secrets.GRAFANA_PASSWORD }}`
+- Username: `{{ secrets.GRAFANA_ADMIN_USERNAME }}`
+- Password: `{{ secrets.GRAFANA_ADMIN_PASSWORD }}`
 
 Those placeholders are substituted at tool-call time from the account secrets
 and are fenced to the preview origin. The same two secrets are what the setup

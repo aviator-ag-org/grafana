@@ -23,20 +23,26 @@ verify:
       port: 3000
       setup: .aviator/scripts/preview-setup.sh
       secrets:
-        - GRAFANA_USERNAME
-        - GRAFANA_PASSWORD
+        - GRAFANA_ADMIN_USERNAME
+        - GRAFANA_ADMIN_PASSWORD
 ```
 
 `secrets:` names account secrets (Settings → Secrets); their values are injected
 into the setup script as environment variables of the same name, and the verify
-skill refers to them as `{{ secrets.GRAFANA_USERNAME }}` /
-`{{ secrets.GRAFANA_PASSWORD }}`. They are grafana's admin login. Nothing in
-this repo holds the values.
+skill refers to them as `{{ secrets.GRAFANA_ADMIN_USERNAME }}` /
+`{{ secrets.GRAFANA_ADMIN_PASSWORD }}`. They are grafana's admin login. Nothing
+in this repo holds the values.
 
-A key that does not exist is **not** an error — the resolver looks keys up with
-an `IN` query and omits what it cannot find — so the setup script checks for
-both itself and fails with the missing names rather than booting a grafana
-nobody can log into.
+Two things about how keys resolve, both of which the script defends against:
+
+- A key that does not exist is **not** an error — the resolver looks keys up
+  with an `IN` query and omits what it cannot find — so the script checks for
+  both itself and fails with the missing names rather than booting a grafana
+  nobody can log into.
+- The `secrets:` list matches keys **case-sensitively** while the
+  `{{ secrets.* }}` placeholders resolve **case-insensitively**, so a secret
+  created in the other case would reach the skill but not the script. The script
+  accepts the lowercase spelling as a fallback.
 
 `image:` is the *display name* you gave the custom template, not the e2b alias.
 Saving validates it with the same resolver the launch uses, so a green save
