@@ -22,7 +22,21 @@ verify:
       image: grafana-prev-1 # display name of the custom template
       port: 3000
       setup: .aviator/scripts/preview-setup.sh
+      secrets:
+        - GRAFANA_USERNAME
+        - GRAFANA_PASSWORD
 ```
+
+`secrets:` names account secrets (Settings → Secrets); their values are injected
+into the setup script as environment variables of the same name, and the verify
+skill refers to them as `{{ secrets.GRAFANA_USERNAME }}` /
+`{{ secrets.GRAFANA_PASSWORD }}`. They are grafana's admin login. Nothing in
+this repo holds the values.
+
+A key that does not exist is **not** an error — the resolver looks keys up with
+an `IN` query and omits what it cannot find — so the setup script checks for
+both itself and fails with the missing names rather than booting a grafana
+nobody can log into.
 
 `image:` is the *display name* you gave the custom template, not the e2b alias.
 Saving validates it with the same resolver the launch uses, so a green save

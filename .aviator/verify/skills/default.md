@@ -17,12 +17,13 @@ no other service running.
 Grafana requires a login for almost everything.
 
 - URL: `/login`
-- Username: `admin`
-- Password: `aviator-preview`
+- Username: `{{ secrets.GRAFANA_USERNAME }}`
+- Password: `{{ secrets.GRAFANA_PASSWORD }}`
 
-The password is set by `.aviator/scripts/preview-setup.sh`. It is deliberately
-not the default `admin`, because logging in with `admin/admin` sends you to a
-forced password-change screen first.
+Those placeholders are substituted at tool-call time from the account secrets
+and are fenced to the preview origin. The same two secrets are what the setup
+script hands grafana as its admin credentials, so they are always in step. Do
+not paste literal credentials into this file or into a scenario.
 
 After login you land on the org home dashboard, which the setup script points at
 the seeded dashboard below.
