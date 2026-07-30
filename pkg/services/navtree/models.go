@@ -167,17 +167,10 @@ func (root *NavTreeRoot) MarshalJSON() ([]byte, error) {
 }
 
 func Sort(nodes []*NavLink) {
+	// Sort navigation items alphabetically by their Text field.
+	// Uses stable sort to maintain consistent ordering for items with identical text.
 	sort.SliceStable(nodes, func(i, j int) bool {
-		iw := nodes[i].SortWeight
-		if iw == 0 {
-			iw = int64(i) + 1
-		}
-		jw := nodes[j].SortWeight
-		if jw == 0 {
-			jw = int64(j) + 1
-		}
-
-		return iw < jw
+		return nodes[i].Text < nodes[j].Text
 	})
 
 	for _, child := range nodes {
